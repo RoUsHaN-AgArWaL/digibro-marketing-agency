@@ -16,6 +16,7 @@ import servicesRouter from "./routes/services.js";
 
 
 const app = express();
+app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     message: "DIGIBRO API running"

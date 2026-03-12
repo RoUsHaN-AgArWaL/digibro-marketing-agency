@@ -104,13 +104,16 @@ router.get("/:slug", async (req, res, next) => {
 
 router.post("/", verifyToken, requireAdmin, async (req, res, next) => {
   try {
-    const service = await Service.create(buildServicePayload(req.body));
-    res.status(201).json(service);
+    const service = await Service.create(req.body);
+
+    console.log("Service saved:", service); // DEBUG LINE
+
+    return res.status(201).json(service);
   } catch (error) {
+    console.error("Service create error:", error);
     next(error);
   }
 });
-
 router.put("/:id", verifyToken, requireAdmin, async (req, res, next) => {
   try {
     const service = await Service.findOneAndUpdate(serviceQuery(req.params.id), buildServicePayload(req.body), {

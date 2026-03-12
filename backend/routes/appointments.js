@@ -96,9 +96,6 @@
 // });
 
 // export default router;
-
-
-
 import express from "express";
 import sanitizeHtml from "sanitize-html";
 import { body, validationResult } from "express-validator";
@@ -108,9 +105,11 @@ import { sendAdminNotification } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
+/* fallback memory store (only if DB fails) */
 let localAppointments = [];
 
-/* CREATE APPOINTMENT */
+/* ---------- CREATE APPOINTMENT ---------- */
+
 router.post(
   "/",
   [
@@ -121,30 +120,27 @@ router.post(
   ],
   async (req, res, next) => {
     try {
+
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const payload = {
-        _id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+      const appointmentData = {
         name: req.body.name,
         email: req.body.email,
         phone: req.body.phone,
         service: req.body.service,
-        message: sanitizeHtml(String(req.body.message || "")),
+        message: sanitizeHtml(req.body.message || ""),
         preferredDate: req.body.preferredDate || "",
         preferredTime: req.body.preferredTime || "",
         status: "pending",
-        createdAt: new Date().toISOString(),
       };
 
       try {
-        const appointment = await Appointment.create({
-          ...req.body,
-          message: sanitizeHtml(req.body.message || ""),
-        });
+
+        const appointment = await Appointment.create(appointmentData);
 
         await sendAdminNotification(
           "New DIGIBRO appointment",
@@ -155,16 +151,22 @@ router.post(
 
       } catch (dbError) {
 
-        console.error("DB write failed:", dbError);
+        console.error("MongoDB write failed:", dbError);
 
-        localAppointments.unshift(payload);
+        const fallback = {
+          _id: Math.random().toString(36).slice(2),
+          ...appointmentData,
+          createdAt: new Date().toISOString(),
+        };
+
+        localAppointments.unshift(fallback);
 
         await sendAdminNotification(
-          "New DIGIBRO appointment (demo)",
-          `${payload.name} booked ${payload.service}.`
+          "New DIGIBRO appointment (fallback)",
+          `${fallback.name} booked ${fallback.service}.`
         );
 
-        return res.status(201).json(payload);
+        return res.status(201).json(fallback);
       }
 
     } catch (error) {
@@ -173,11 +175,14 @@ router.post(
   }
 );
 
-/* GET APPOINTMENTS */
+/* ---------- GET APPOINTMENTS (ADMIN) ---------- */
+
 router.get("/", verifyToken, requireAdmin, async (req, res, next) => {
   try {
 
-    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    const appointments = await Appointment.find()
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.json(appointments);
 
@@ -188,7 +193,8 @@ router.get("/", verifyToken, requireAdmin, async (req, res, next) => {
   }
 });
 
-/* UPDATE STATUS */
+/* ---------- UPDATE STATUS ---------- */
+
 router.patch("/:id/status", verifyToken, requireAdmin, async (req, res, next) => {
   try {
 
@@ -213,7 +219,8 @@ router.patch("/:id/status", verifyToken, requireAdmin, async (req, res, next) =>
       return res.json(localAppointments[idx]);
     }
 
-    return res.status(404).json({ message: "Not found" });
+    return res.status(404).json({ message: "Appointment not found." });
+
   }
 });
 

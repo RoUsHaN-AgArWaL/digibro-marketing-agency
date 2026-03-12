@@ -29,14 +29,23 @@
 //   console.log("MongoDB connected");
 // }
 
-
 import mongoose from "mongoose";
+
+/*
+  Global cache for serverless environments (Vercel / AWS Lambda)
+  Prevents multiple MongoDB connections
+*/
 
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose = {
+    conn: null,
+    promise: null,
+  };
 }
+
+/* ---------- DATABASE STATUS ---------- */
 
 export function isDatabaseConnected() {
   return mongoose.connection.readyState === 1;
@@ -51,6 +60,8 @@ export function getDatabaseStatus() {
   };
 }
 
+/* ---------- CONNECT DATABASE ---------- */
+
 export async function connectDB() {
   if (cached.conn) {
     return cached.conn;
@@ -59,7 +70,9 @@ export async function connectDB() {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    console.warn("MONGODB_URI not defined. Running API without DB connection.");
+    console.warn(
+      "⚠️ MONGODB_URI not defined. Running API without database connection."
+    );
     return;
   }
 
@@ -67,12 +80,23 @@ export async function connectDB() {
     cached.promise = mongoose.connect(mongoUri, {
       dbName: process.env.MONGODB_DB || "digibro",
       serverSelectionTimeoutMS: 10000,
+      bufferCommands: false,
     });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
 
-  console.log("MongoDB connected");
+    console.log("✅ MongoDB connected");
 
-  return cached.conn;
+    return cached.conn;
+
+  } catch (error) {
+
+    cached.promise = null;
+
+    console.error("❌ MongoDB connection failed:", error);
+
+    throw error;
+  }
 }

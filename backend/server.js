@@ -40,6 +40,7 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(express.json({ limit: "1mb" }));
+app.set("trust proxy", 1);
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,

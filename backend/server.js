@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import { connectDB, getDatabaseStatus } from "./config/db.js";
+import { getDatabaseStatus } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 import appointmentsRouter from "./routes/appointments.js";
@@ -91,9 +91,5 @@ app.use("/api/dashboard", dashboardRouter);
 /* ---------- ERROR HANDLER ---------- */
 
 app.use(errorHandler);
-
-/* ---------- DATABASE ---------- */
-
-await connectDB();
 
 export default app;

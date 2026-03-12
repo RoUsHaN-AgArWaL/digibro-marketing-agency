@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import { getDatabaseStatus } from "./config/db.js";
+import { connectDB, getDatabaseStatus } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 import appointmentsRouter from "./routes/appointments.js";
@@ -82,10 +82,15 @@ app.get("/api/health", (req, res) => {
 
 app.get("/api/debug-db", async (req, res) => {
   try {
+    const conn = await connectDB();
     const database = getDatabaseStatus();
+
     return res.json({
       ok: true,
       database,
+      connectedUriPresent: Boolean(process.env.MONGODB_URI),
+      dbNameEnv: process.env.MONGODB_DB || null,
+      connectionReady: Boolean(conn),
     });
   } catch (error) {
     return res.status(500).json({

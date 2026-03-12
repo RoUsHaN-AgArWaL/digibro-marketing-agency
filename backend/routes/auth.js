@@ -7,11 +7,7 @@ import { Admin } from "../models/Admin.js";
 const router = express.Router();
 
 const demoAdminEmail = "admin@digibro.agency";
-let demoAdminPasswordHash;
-
-(async () => {
-  demoAdminPasswordHash = await bcrypt.hash("digibro123", 12);
-})();
+const demoAdminPasswordHash = bcrypt.hash("digibro123", 12);
 
 router.post(
   "/login",

@@ -413,8 +413,8 @@ function PageHero({ eyebrow, title, description }: { eyebrow: string; title: str
 function HomePage({ onLeadOpen }: { onLeadOpen: () => void }) {
   const heroRef = useRef<HTMLDivElement>(null);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [services] = useStoredValue("digibro_admin_services", serviceCatalog);
-  const [projects] = useStoredValue("digibro_admin_portfolio", portfolioProjects);
+  const [services, setServices] = useState(() => serviceCatalog.map(normalizeServiceRecord));
+  const [projects, setProjects] = useState(() => portfolioProjects.map(normalizePortfolioRecord));
 
   useLayoutEffect(() => {
     if (!heroRef.current) return;
@@ -430,6 +430,32 @@ function HomePage({ onLeadOpen }: { onLeadOpen: () => void }) {
     }, heroRef);
 
     return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadContent = async () => {
+      try {
+        const [remoteServices, remoteProjects] = await Promise.all([
+          apiFetch<any[]>("/services"),
+          apiFetch<any[]>("/portfolio"),
+        ]);
+
+        if (!active) return;
+
+        setServices(remoteServices.map(normalizeServiceRecord));
+        setProjects(remoteProjects.map(normalizePortfolioRecord));
+      } catch {
+        // Fallback to bundled demo content if API is unavailable
+      }
+    };
+
+    void loadContent();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -767,7 +793,27 @@ function AboutPage() {
 }
 
 function ServicesPage() {
-  const [services] = useStoredValue("digibro_admin_services", serviceCatalog);
+  const [services, setServices] = useState(() => serviceCatalog.map(normalizeServiceRecord));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadServices = async () => {
+      try {
+        const remoteServices = await apiFetch<any[]>("/services");
+        if (!active) return;
+        setServices(remoteServices.map(normalizeServiceRecord));
+      } catch {
+        // Keep demo services when API is unavailable
+      }
+    };
+
+    void loadServices();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <>
@@ -799,7 +845,28 @@ function ServicesPage() {
 
 function ServiceDetailPage() {
   const params = useParams();
-  const [services] = useStoredValue("digibro_admin_services", serviceCatalog);
+  const [services, setServices] = useState(() => serviceCatalog.map(normalizeServiceRecord));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadServices = async () => {
+      try {
+        const remoteServices = await apiFetch<any[]>("/services");
+        if (!active) return;
+        setServices(remoteServices.map(normalizeServiceRecord));
+      } catch {
+        // Fallback to bundled services
+      }
+    };
+
+    void loadServices();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const service = services.find((entry) => entry.slug === params.slug);
 
   if (!service) return <Navigate to="/services" replace />;
@@ -878,9 +945,29 @@ function ServiceDetailPage() {
 
 function PortfolioPage() {
   const [filter, setFilter] = useState("All");
-  const [projects] = useStoredValue("digibro_admin_portfolio", portfolioProjects);
+  const [projects, setProjects] = useState(() => portfolioProjects.map(normalizePortfolioRecord));
   const filters = ["All", "Web Design", "Branding", "Social Media", "Video"];
   const visible = filter === "All" ? projects : projects.filter((project) => project.category === filter);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProjects = async () => {
+      try {
+        const remoteProjects = await apiFetch<any[]>("/portfolio");
+        if (!active) return;
+        setProjects(remoteProjects.map(normalizePortfolioRecord));
+      } catch {
+        // Keep demo projects if API is unavailable
+      }
+    };
+
+    void loadProjects();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <>
@@ -931,7 +1018,27 @@ function PortfolioPage() {
 
 function PortfolioDetailPage() {
   const params = useParams();
-  const [projects] = useStoredValue("digibro_admin_portfolio", portfolioProjects);
+  const [projects, setProjects] = useState(() => portfolioProjects.map(normalizePortfolioRecord));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProjects = async () => {
+      try {
+        const remoteProjects = await apiFetch<any[]>("/portfolio");
+        if (!active) return;
+        setProjects(remoteProjects.map(normalizePortfolioRecord));
+      } catch {
+        // Fallback to bundled portfolio
+      }
+    };
+
+    void loadProjects();
+
+    return () => {
+      active = false;
+    };
+  }, []);
   const project = projects.find((entry) => entry.slug === params.slug);
 
   if (!project) return <Navigate to="/portfolio" replace />;
@@ -1062,7 +1169,27 @@ function PricingPage() {
 }
 
 function BlogPage() {
-  const [posts] = useStoredValue("digibro_admin_blog", blogPosts);
+  const [posts, setPosts] = useState(() => blogPosts.map(normalizeBlogRecord));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPosts = async () => {
+      try {
+        const remotePosts = await apiFetch<any[]>("/blog");
+        if (!active) return;
+        setPosts(remotePosts.map(normalizeBlogRecord));
+      } catch {
+        // Keep demo posts when API is unavailable
+      }
+    };
+
+    void loadPosts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <>
@@ -1088,7 +1215,27 @@ function BlogPage() {
 
 function BlogDetailPage() {
   const params = useParams();
-  const [posts] = useStoredValue("digibro_admin_blog", blogPosts);
+  const [posts, setPosts] = useState(() => blogPosts.map(normalizeBlogRecord));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPosts = async () => {
+      try {
+        const remotePosts = await apiFetch<any[]>("/blog");
+        if (!active) return;
+        setPosts(remotePosts.map(normalizeBlogRecord));
+      } catch {
+        // Fallback to bundled posts
+      }
+    };
+
+    void loadPosts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
   const post = posts.find((entry) => entry.slug === params.slug);
 
   if (!post) return <Navigate to="/blog" replace />;

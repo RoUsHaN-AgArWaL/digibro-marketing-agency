@@ -24,9 +24,9 @@ This describes the fully working setup and what was changed to eliminate errors 
 
    cd backend && node server.js
 
-   Backend runs on http://localhost:4000
+   Backend runs on https://digibro-api.vercel.app
 
-   You can hit http://localhost:4000/api/health to confirm.
+   You can hit https://digibro-api.vercel.app/api/health to confirm.
 
 Note: If you do not have MongoDB locally, just leave MONGODB_URI empty in backend/.env. The API will run in demo mode without a database and all routes work with in-memory storage.
 

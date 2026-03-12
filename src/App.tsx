@@ -116,7 +116,7 @@ function submitWithFallback<T>(key: string, payload: T) {
   writeStorage(key, next);
 }
 
-const API_BASE_URL = "http://localhost:4000/api";
+const API_BASE_URL = "https://digibro-api.vercel.app/api";
 
 function slugify(value: string) {
   return value

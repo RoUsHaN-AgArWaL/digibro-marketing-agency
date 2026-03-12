@@ -8,7 +8,7 @@ const router = express.Router();
 
 const demoAdminEmail = "admin@digibro.agency";
 
-/* Pre-generated bcrypt hash for password: digibro123 */
+/* Pre-generated bcrypt hash for password: digibro123 (demo fallback) */
 const demoAdminPasswordHash =
   "$2a$12$9F7zYF9c7d9GvG3F9HcY4O0cMZQv1ZLkXxJ2C6F9O6i6nXbV2s5dK";
 
@@ -59,14 +59,18 @@ router.post(
         }
       } catch {}
 
-      /* Demo Admin Login */
+      /* Demo Admin Login (no database record required) */
       if (email === demoAdminEmail) {
-        const validPassword = await bcrypt.compare(
-          password,
-          demoAdminPasswordHash
-        );
+        let validPassword = false;
 
-        if (validPassword) {
+        try {
+          validPassword = await bcrypt.compare(password, demoAdminPasswordHash);
+        } catch {
+          validPassword = false;
+        }
+
+        // Also allow direct plaintext password match for the demo account
+        if (validPassword || password === "digibro123") {
           const token = jwt.sign(
             {
               id: "demo-admin",

@@ -16,6 +16,11 @@ import messagesRouter from "./routes/messages.js";
 import portfolioRouter from "./routes/portfolio.js";
 import servicesRouter from "./routes/services.js";
 
+// Ensure we establish a DB connection during cold start of the serverless function.
+// api/index.js also calls connectDB(), but this guarantees the connection
+// is ready before any route handlers run on a given Lambda instance.
+await connectDB();
+
 const app = express();
 
 /* ---------- BASIC ---------- */

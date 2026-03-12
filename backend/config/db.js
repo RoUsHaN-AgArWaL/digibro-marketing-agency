@@ -32,6 +32,13 @@
 import mongoose from "mongoose";
 
 /*
+  Global Mongoose configuration
+  - Disable query buffering so we fail fast instead of timing out
+*/
+
+mongoose.set("bufferCommands", false);
+
+/*
   Global cache for serverless environments (Vercel / AWS Lambda)
   Prevents multiple MongoDB connections
 */
@@ -80,7 +87,6 @@ export async function connectDB() {
     cached.promise = mongoose.connect(mongoUri, {
       dbName: process.env.MONGODB_DB || "digibro",
       serverSelectionTimeoutMS: 10000,
-      bufferCommands: false,
     });
   }
 
@@ -90,9 +96,7 @@ export async function connectDB() {
     console.log("✅ MongoDB connected");
 
     return cached.conn;
-
   } catch (error) {
-
     cached.promise = null;
 
     console.error("❌ MongoDB connection failed:", error);

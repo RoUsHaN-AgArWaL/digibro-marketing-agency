@@ -30,7 +30,7 @@ app.get("/api/health", (req, res) => {
 app.use(helmet());
 app.use(
   cors({
-    origin: (process.env.CLIENT_URL || "http://localhost:5173,http://localhost:4173")
+    origin: (process.env.CLIENT_URL || "http://localhost:5173,http://localhost:4173,https://digibro-marketing-agency.vercel.app/")
       .split(",")
       .map((o) => o.trim())
       .filter(Boolean),

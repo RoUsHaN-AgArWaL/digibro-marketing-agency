@@ -16,6 +16,16 @@ import servicesRouter from "./routes/services.js";
 
 
 const app = express();
+app.get("/", (req, res) => {
+  res.json({
+    message: "DIGIBRO API running"
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 
 app.use(helmet());
 app.use(

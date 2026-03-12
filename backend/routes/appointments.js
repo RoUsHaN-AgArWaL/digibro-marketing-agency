@@ -105,9 +105,6 @@ import { sendAdminNotification } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
-/* fallback memory store (only if DB fails) */
-let localAppointments = [];
-
 /* ---------- CREATE APPOINTMENT ---------- */
 
 router.post(
@@ -120,7 +117,6 @@ router.post(
   ],
   async (req, res, next) => {
     try {
-
       const errors = validationResult(req);
 
       if (!errors.isEmpty()) {
@@ -138,38 +134,16 @@ router.post(
         status: "pending",
       };
 
-      try {
+      const appointment = await Appointment.create(appointmentData);
 
-        const appointment = await Appointment.create(appointmentData);
+      await sendAdminNotification(
+        "New DIGIBRO appointment",
+        `${appointment.name} booked ${appointment.service}.`
+      );
 
-        await sendAdminNotification(
-          "New DIGIBRO appointment",
-          `${appointment.name} booked ${appointment.service}.`
-        );
-
-        return res.status(201).json(appointment);
-
-      } catch (dbError) {
-
-        console.error("MongoDB write failed:", dbError);
-
-        const fallback = {
-          _id: Math.random().toString(36).slice(2),
-          ...appointmentData,
-          createdAt: new Date().toISOString(),
-        };
-
-        localAppointments.unshift(fallback);
-
-        await sendAdminNotification(
-          "New DIGIBRO appointment (fallback)",
-          `${fallback.name} booked ${fallback.service}.`
-        );
-
-        return res.status(201).json(fallback);
-      }
-
+      return res.status(201).json(appointment);
     } catch (error) {
+      console.error("MongoDB appointment write failed:", error);
       next(error);
     }
   }
@@ -179,17 +153,14 @@ router.post(
 
 router.get("/", verifyToken, requireAdmin, async (req, res, next) => {
   try {
-
     const appointments = await Appointment.find()
       .sort({ createdAt: -1 })
       .lean();
 
     return res.json(appointments);
-
   } catch (error) {
-
-    return res.json(localAppointments);
-
+    console.error("MongoDB appointment read failed:", error);
+    next(error);
   }
 });
 
@@ -197,7 +168,6 @@ router.get("/", verifyToken, requireAdmin, async (req, res, next) => {
 
 router.patch("/:id/status", verifyToken, requireAdmin, async (req, res, next) => {
   try {
-
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       { status: req.body.status },
@@ -209,18 +179,9 @@ router.patch("/:id/status", verifyToken, requireAdmin, async (req, res, next) =>
     }
 
     return res.json(appointment);
-
   } catch (error) {
-
-    const idx = localAppointments.findIndex((a) => a._id === req.params.id);
-
-    if (idx >= 0) {
-      localAppointments[idx].status = req.body.status;
-      return res.json(localAppointments[idx]);
-    }
-
-    return res.status(404).json({ message: "Appointment not found." });
-
+    console.error("MongoDB appointment status update failed:", error);
+    next(error);
   }
 });
 

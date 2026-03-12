@@ -845,7 +845,8 @@ function ServicesPage() {
 
 function ServiceDetailPage() {
   const params = useParams();
-  const [services, setServices] = useState(() => serviceCatalog.map(normalizeServiceRecord));
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -856,7 +857,11 @@ function ServiceDetailPage() {
         if (!active) return;
         setServices(remoteServices.map(normalizeServiceRecord));
       } catch {
-        // Fallback to bundled services
+        if (!active) return;
+        // Fallback to bundled services if API fails
+        setServices(serviceCatalog.map(normalizeServiceRecord));
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
@@ -868,6 +873,15 @@ function ServiceDetailPage() {
   }, []);
 
   const service = services.find((entry) => entry.slug === params.slug);
+
+  if (loading) {
+    return (
+      <>
+        <Seo title="Loading service..." description="Loading service details." />
+        <PageHero eyebrow="Services" title="Loading..." description="Loading service details." />
+      </>
+    );
+  }
 
   if (!service) return <Navigate to="/services" replace />;
 
@@ -1018,7 +1032,8 @@ function PortfolioPage() {
 
 function PortfolioDetailPage() {
   const params = useParams();
-  const [projects, setProjects] = useState(() => portfolioProjects.map(normalizePortfolioRecord));
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -1029,7 +1044,11 @@ function PortfolioDetailPage() {
         if (!active) return;
         setProjects(remoteProjects.map(normalizePortfolioRecord));
       } catch {
+        if (!active) return;
         // Fallback to bundled portfolio
+        setProjects(portfolioProjects.map(normalizePortfolioRecord));
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
@@ -1040,6 +1059,15 @@ function PortfolioDetailPage() {
     };
   }, []);
   const project = projects.find((entry) => entry.slug === params.slug);
+
+  if (loading) {
+    return (
+      <>
+        <Seo title="Loading project..." description="Loading portfolio project." />
+        <PageHero eyebrow="Portfolio" title="Loading..." description="Loading portfolio project." />
+      </>
+    );
+  }
 
   if (!project) return <Navigate to="/portfolio" replace />;
 
@@ -1215,7 +1243,8 @@ function BlogPage() {
 
 function BlogDetailPage() {
   const params = useParams();
-  const [posts, setPosts] = useState(() => blogPosts.map(normalizeBlogRecord));
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -1226,7 +1255,11 @@ function BlogDetailPage() {
         if (!active) return;
         setPosts(remotePosts.map(normalizeBlogRecord));
       } catch {
+        if (!active) return;
         // Fallback to bundled posts
+        setPosts(blogPosts.map(normalizeBlogRecord));
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
@@ -1237,6 +1270,15 @@ function BlogDetailPage() {
     };
   }, []);
   const post = posts.find((entry) => entry.slug === params.slug);
+
+  if (loading) {
+    return (
+      <>
+        <Seo title="Loading article..." description="Loading blog post." />
+        <PageHero eyebrow="Blog" title="Loading..." description="Loading blog post." />
+      </>
+    );
+  }
 
   if (!post) return <Navigate to="/blog" replace />;
 

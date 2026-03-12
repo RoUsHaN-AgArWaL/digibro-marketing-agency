@@ -1317,13 +1317,6 @@ function AdminLoginPage({ onLogin }: { onLogin: (token: string) => void }) {
       navigate("/admin");
       return;
     } catch (requestError) {
-      if (email === "admin@digibro.agency" && password === "digibro123") {
-        const token = `digibro-demo-token-${Date.now()}`;
-        onLogin(token);
-        navigate("/admin");
-        return;
-      }
-
       setError(requestError instanceof Error ? requestError.message : "Unable to log in.");
     }
   };
@@ -1427,31 +1420,31 @@ function AdminDashboardPage({ token, onLogout }: { token: string | null; onLogou
   const deleteService = async (slug: string) => {
     try {
       await apiFetch<{ success: boolean }>(`/services/${slug}`, { method: "DELETE" }, token);
+      saveServices(servicesState.filter((item) => item.slug !== slug));
     } catch {
-      // Keep local delete behavior when the API is unavailable.
+      console.error("Failed to delete service from API");
+      return;
     }
-
-    saveServices(servicesState.filter((item) => item.slug !== slug));
   };
 
   const deleteBlogPost = async (slug: string) => {
     try {
       await apiFetch<{ success: boolean }>(`/blog/${slug}`, { method: "DELETE" }, token);
+      saveBlog(blogState.filter((item) => item.slug !== slug));
     } catch {
-      // Keep local delete behavior when the API is unavailable.
+      console.error("Failed to delete blog post from API");
+      return;
     }
-
-    saveBlog(blogState.filter((item) => item.slug !== slug));
   };
 
   const deletePortfolioProject = async (slug: string) => {
     try {
       await apiFetch<{ success: boolean }>(`/portfolio/${slug}`, { method: "DELETE" }, token);
+      savePortfolio(portfolioState.filter((item) => item.slug !== slug));
     } catch {
-      // Keep local delete behavior when the API is unavailable.
+      console.error("Failed to delete portfolio project from API");
+      return;
     }
-
-    savePortfolio(portfolioState.filter((item) => item.slug !== slug));
   };
 
   const handleServiceCreate = async (event: FormEvent<HTMLFormElement>) => {
@@ -1472,8 +1465,9 @@ function AdminDashboardPage({ token, onLogout }: { token: string | null; onLogou
         body: JSON.stringify(servicePayload),
       }, token);
       saveServices([normalizeServiceRecord(created), ...servicesState.filter((item) => item.slug !== servicePayload.slug)]);
-    } catch {
-      saveServices([servicePayload, ...servicesState.filter((item) => item.slug !== servicePayload.slug)]);
+    } catch (error) {
+      console.error("Failed to create service via API", error);
+      return;
     }
 
     event.currentTarget.reset();
@@ -1496,8 +1490,9 @@ function AdminDashboardPage({ token, onLogout }: { token: string | null; onLogou
         body: JSON.stringify(blogPayload),
       }, token);
       saveBlog([normalizeBlogRecord(created), ...blogState.filter((item) => item.slug !== blogPayload.slug)]);
-    } catch {
-      saveBlog([blogPayload, ...blogState.filter((item) => item.slug !== blogPayload.slug)]);
+    } catch (error) {
+      console.error("Failed to create blog post via API", error);
+      return;
     }
 
     event.currentTarget.reset();
@@ -1521,8 +1516,9 @@ function AdminDashboardPage({ token, onLogout }: { token: string | null; onLogou
         body: JSON.stringify(portfolioPayload),
       }, token);
       savePortfolio([normalizePortfolioRecord(created), ...portfolioState.filter((item) => item.slug !== portfolioPayload.slug)]);
-    } catch {
-      savePortfolio([portfolioPayload, ...portfolioState.filter((item) => item.slug !== portfolioPayload.slug)]);
+    } catch (error) {
+      console.error("Failed to create portfolio project via API", error);
+      return;
     }
 
     event.currentTarget.reset();
@@ -1540,10 +1536,8 @@ function AdminDashboardPage({ token, onLogout }: { token: string | null; onLogou
       setAppointments(next);
       writeStorage("digibro_appointments", next);
       return;
-    } catch {
-      const next = appointments.map((item) => (item.id === id ? { ...item, status } : item));
-      setAppointments(next);
-      writeStorage("digibro_appointments", next);
+    } catch (error) {
+      console.error("Failed to update appointment status via API", error);
     }
   };
 

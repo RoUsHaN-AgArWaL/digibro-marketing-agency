@@ -6,6 +6,7 @@ import { Appointment } from "../models/Appointment.js";
 import { requireAdmin, verifyToken } from "../middleware/auth.js";
 import { sendAdminNotification } from "../utils/sendEmail.js";
 
+
 const router = express.Router();
 
 let localAppointments = [];

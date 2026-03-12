@@ -1,12 +1,13 @@
 import express from "express";
 import sanitizeHtml from "sanitize-html";
 import { body, validationResult } from "express-validator";
-import { isDatabaseConnected } from "../config/db.js";
 import { Message } from "../models/Message.js";
 import { requireAdmin, verifyToken } from "../middleware/auth.js";
 import { sendAdminNotification } from "../utils/sendEmail.js";
 
 const router = express.Router();
+
+/* fallback memory store (only if DB fails) */
 let localMessages = [];
 
 router.post(
@@ -20,41 +21,55 @@ router.post(
       }
 
       const payload = {
-        _id: Math.random().toString(36).slice(2) + Date.now().toString(36),
         name: req.body.name,
         email: req.body.email,
         phone: req.body.phone || "",
         company: req.body.company || "",
         message: sanitizeHtml(String(req.body.message)),
-        createdAt: new Date().toISOString(),
       };
 
-      if (isDatabaseConnected()) {
-        const message = await Message.create({
-          ...req.body,
-          message: sanitizeHtml(req.body.message),
-        });
-        await sendAdminNotification("New DIGIBRO contact message", `${message.name} sent a new inquiry.`);
-        return res.status(201).json(message);
-      }
+      try {
+        const message = await Message.create(payload);
 
-      localMessages.unshift(payload);
-      await sendAdminNotification("New DIGIBRO contact message (demo)", `${payload.name} sent a new inquiry.`);
-      return res.status(201).json(payload);
+        await sendAdminNotification(
+          "New DIGIBRO contact message",
+          `${message.name} sent a new inquiry.`
+        );
+
+        return res.status(201).json(message);
+      } catch (dbError) {
+        console.error("MongoDB message write failed:", dbError);
+
+        const fallback = {
+          _id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+          ...payload,
+          createdAt: new Date().toISOString(),
+        };
+
+        localMessages.unshift(fallback);
+
+        await sendAdminNotification(
+          "New DIGIBRO contact message (fallback)",
+          `${fallback.name} sent a new inquiry.`
+        );
+
+        return res.status(201).json(fallback);
+      }
     } catch (error) {
       next(error);
     }
-  },
+  }
 );
 
 router.get("/", verifyToken, requireAdmin, async (req, res, next) => {
   try {
-    if (isDatabaseConnected()) {
-      const messages = await Message.find().sort({ createdAt: -1 });
+    try {
+      const messages = await Message.find().sort({ createdAt: -1 }).lean();
       return res.json(messages);
+    } catch (dbError) {
+      console.error("MongoDB message read failed:", dbError);
+      return res.json(localMessages);
     }
-
-    return res.json(localMessages);
   } catch (error) {
     next(error);
   }

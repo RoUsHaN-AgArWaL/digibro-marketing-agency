@@ -78,6 +78,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+/* ---------- DEBUG: SIMPLE DB CHECK ---------- */
+
+app.get("/api/debug-db", async (req, res) => {
+  try {
+    const database = getDatabaseStatus();
+    return res.json({
+      ok: true,
+      database,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || "Unknown error",
+    });
+  }
+});
+
 /* ---------- ROUTES ---------- */
 
 app.use("/api/auth", authRouter);
